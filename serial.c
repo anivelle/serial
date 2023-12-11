@@ -49,7 +49,10 @@ int main(int argc, char *argv[]) {
         case SEL_STATE:
             printf("\nDo you want to read or write (r/w/q)? ");
             fflush(stdout);
+            // Reads two bytes to clear out the newline (fflush does not work on
+            // input, apparently)
             read(STDIN_FILENO, &next_state, 2);
+            // This does what it looks like it does
             switch (next_state[0]) {
             case 'r':
                 curstate = READING;
@@ -66,8 +69,11 @@ int main(int argc, char *argv[]) {
             }
             break;
         case READING:
+            // Don't create more threads if one already exists
             if (!tid)
                 pthread_create(&tid, &attr, exit_check, NULL);
+            // Keep reading until the microcontroller is done and show us the
+            // output
             if (read(fd, readbuf, BUFFER_SIZE) > 0)
                 printf("%s", readbuf);
             else {
@@ -75,25 +81,26 @@ int main(int argc, char *argv[]) {
             }
             if (exit_read.should_exit) {
                 switch (exit_read.reason) {
+                // Return to state selection
                 case 0:
                     pthread_join(tid, NULL);
-                    exit_read.should_exit = 0;
-                    exit_read.reason = -1;
                     curstate = SEL_STATE;
                     tid = 0;
                     break;
+                // Return to writing state
                 case 1:
-                    exit_read.should_exit = 0;
-                    exit_read.reason = -1;
                     curstate = WRITING;
                     break;
                 default:
                     break;
                 }
+                exit_read.should_exit = 0;
+                exit_read.reason = -1;
             }
             break;
         case WRITING:
-
+            // Get variable-length input (although really if you're writing more
+            // than like 20 characters over serial what are you doing)
             getline(&writebuf, (size_t *)&char_read, stdin);
 
             // Sanitize input (remove '\n')
@@ -124,6 +131,8 @@ int main(int argc, char *argv[]) {
 // Thread to check for enter input when reading (to leave the state)
 void *exit_check(void *param) {
     char buf;
+    // This just blocks the thread, but the thread does nothing else so that's
+    // intentional
     while (read(STDIN_FILENO, &buf, 1) == 1) {
         if (buf == '\n')
             break;

@@ -12,5 +12,5 @@ Anyway, not really meant for anyone's use but mine, it speaks by default
 (hard-coded) to `/dev/ttyACM0` because that's what the Nano BLE 33 and Pi Pico
 use, and I can change it really easily.
 
-Write functionality isn't actually tested yet, but I don't even write to
-microcontrollers all that often anyway (but maybe in the future).
+Write functionality isn't actually tested yet, but I plan on making a shell-like 
+program with FreeRTOS on the Pi Pico soon so I'll probably test it then.
